@@ -5,6 +5,7 @@ import {
   Baby, Smile, Scissors, Activity, Calculator, BadgeCheck, Mail, PhoneCall,
   Building2, GraduationCap, Truck, LayoutDashboard, Menu, X, Quote
 } from "lucide-react";
+import PlanFinder from "./PlanFinder.jsx";
 
 /* ================= FIND DENTAL PROVIDERS — full site v2 (imagery + brand blue) ================= */
 const C = {
@@ -184,19 +185,6 @@ function PriceEstimator() {
   );
 }
 
-function LeadForm({ kind }) {
-  const [done, setDone] = useState(false), [n, setN] = useState(""), [p, setP] = useState("");
-  if (done) return <div className="fade" style={{ background: C.sky, borderRadius: 14, padding: 20, textAlign: "center" }}>
-    <div style={{ width: 48, height: 48, borderRadius: 999, background: C.brand, display: "grid", placeItems: "center", margin: "0 auto 10px" }}><Check size={24} color="#fff" /></div>
-    <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 18 }}>Got it{n ? `, ${n.split(" ")[0]}` : ""}!</div>
-    <p style={{ color: C.muted, fontSize: 14.5, margin: "6px 0 0" }}>A licensed agent will reach out shortly. (Demo — no real message sent.)</p></div>;
-  return <div style={{ display: "grid", gap: 10 }}>
-    <input className="fdp-in fdp-btn" value={n} onChange={(e) => setN(e.target.value)} placeholder="Your name" style={{ fontFamily: FONT, fontSize: 15, padding: "12px 14px", borderRadius: 11, border: `1.5px solid ${C.line}`, background: "#fff", color: C.ink }} />
-    <input className="fdp-in fdp-btn" value={p} onChange={(e) => setP(e.target.value)} placeholder="Phone number" inputMode="tel" style={{ fontFamily: FONT, fontSize: 15, padding: "12px 14px", borderRadius: 11, border: `1.5px solid ${C.line}`, background: "#fff", color: C.ink }} />
-    <button className="fdp-btn fdp-cta" onClick={() => setDone(true)} style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15.5, background: C.gold, color: C.brandDeep, border: "none", borderRadius: 12, padding: "13px", cursor: "pointer" }}>{kind === "life" ? "Request my free review" : "Have an agent call me"}</button>
-  </div>;
-}
-
 export default function App() {
   const [page, setPage] = useState("home");
   const [menu, setMenu] = useState(false);
@@ -360,32 +348,8 @@ export default function App() {
         <p style={{ textAlign: "center", fontSize: 12.5, color: C.muted, marginTop: 16 }}>Live demo · sample California providers</p>
       </div></section></div>}
 
-      {/* ---------- GET COVERED ---------- */}
-      {page === "covered" && <div className="fade"><section style={{ padding: "48px 0 70px" }}><div className="wrap">
-        <div className="split" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, alignItems: "center", marginBottom: 40 }}>
-          <div>
-            {eyebrow(Shield, "Coverage & benefits")}
-            <h1 style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: "clamp(30px,5vw,46px)", letterSpacing: "-.03em", lineHeight: 1.05, margin: "12px 0 0" }}>Get covered — talk to a licensed agent, free.</h1>
-            <p style={{ fontSize: 17.5, color: C.muted, marginTop: 14, lineHeight: 1.55 }}>No pressure, no cost. A licensed agent helps you find affordable dental coverage that actually covers the big stuff — even what Medi-Cal won&rsquo;t.</p>
-          </div>
-          <Photo src={IMG.momChild} alt="Mother and child smiling" ratio="4/3" radius={22} fallback={2} overlay={`linear-gradient(160deg, transparent 60%, rgba(12,46,90,.25))`} />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 18, maxWidth: 820, margin: "0 auto" }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 18, padding: 26 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: C.sky, display: "grid", placeItems: "center", marginBottom: 12 }}><Smile size={22} color={C.brand} /></div>
-            <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 20 }}>Dental coverage</div>
-            <p style={{ fontSize: 14.5, color: C.muted, lineHeight: 1.5, margin: "8px 0 16px" }}>Individual and family dental plans that fit your budget and your dentist.</p>
-            <LeadForm kind="dental" />
-          </div>
-          <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 18, padding: 26 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: C.goldSoft, display: "grid", placeItems: "center", marginBottom: 12 }}><HeartHandshake size={22} color={C.goldDeep} /></div>
-            <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 20 }}>Life &amp; living benefits</div>
-            <p style={{ fontSize: 14.5, color: C.muted, lineHeight: 1.5, margin: "8px 0 16px" }}>Protect your family with a free, no-obligation benefits review.</p>
-            <LeadForm kind="life" />
-          </div>
-        </div>
-        <p style={{ textAlign: "center", fontSize: 12.5, color: C.muted, marginTop: 20 }}>Demo form · connects to your licensed agent</p>
-      </div></section></div>}
+      {/* ---------- GET COVERED (Plan Finder) ---------- */}
+      {page === "covered" && <div className="fade"><PlanFinder /></div>}
 
       {/* ---------- FOR DENTISTS ---------- */}
       {page === "dentists" && <div className="fade"><section style={{ padding: "48px 0 70px" }}><div className="wrap split" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40, alignItems: "center" }}>
