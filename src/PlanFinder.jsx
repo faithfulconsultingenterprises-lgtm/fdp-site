@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Sparkles, ArrowRight, Check, Phone, Shield, RotateCcw, ChevronRight, HeartHandshake, ExternalLink } from "lucide-react";
+import { Sparkles, ArrowRight, Check, Phone, Shield, RotateCcw, ChevronRight, ChevronDown, HeartHandshake, ExternalLink } from "lucide-react";
 import { supabase } from "./supabaseClient.js";
 
 /* ============================================================
@@ -25,18 +25,23 @@ const DISPLAY = "'Bricolage Grotesque',Georgia,serif";
 const CARRIERS = {
   dfe: {
     name: "Dental for Everyone",
+    brand: "Delta network",
     link: "https://brokers.dentalforeveryone.com/?Portal=14956642",
-    good: "Major work, no-waiting plans, and most situations",
+    wins: [
+      "One of the largest dentist networks in the country",
+      "Covers major services — implants, dentures, partials, and bridges",
+      "Plans available with no waiting period",
+    ],
   },
   humana: {
     name: "Humana",
     link: "https://www.humana.com/aoadv/1971186",
-    good: "Medicare-age and senior dental options",
+    note: "Lower cost, but limited major-service coverage and a smaller network.",
   },
   ameritas: {
     name: "Ameritas",
     link: "https://myplan.ameritas.com/id/010Z6208",
-    good: "Routine care and families with a wide network",
+    note: "Fine for routine cleanings, but a smaller network and weaker on major work.",
   },
 };
 
@@ -84,18 +89,29 @@ const LIFE_Q = [
 ];
 
 function matchCarrier(a) {
-  // returns { carrier, reason } or { help:true }
+  // Dental for Everyone (Delta) is the PRIMARY recommendation at every age and every need path —
+  // largest network, real major-service coverage, no-waiting-period plans. The results screen
+  // shows Humana + Ameritas below it as an honest comparison. "I need help" → a live agent.
   if (a.need === "unsure") return { help: true, reason: "You told us you'd like help choosing — a licensed agent is the best next step." };
-  if (a.need === "senior") return { carrier: CARRIERS.humana, reason: "Since you're Medicare-age, Humana has senior dental options built for you." };
-  if (a.need === "routine" || a.need === "family") return { carrier: CARRIERS.ameritas, reason: "For routine and family care, Ameritas gives you a wide network at a good value." };
-  // major work, lost coverage, or general → Dental for Everyone (workhorse, no-wait options)
-  return { carrier: CARRIERS.dfe, reason: "Based on what you need, Dental for Everyone has the best-fit plans — including options with no waiting period for major work." };
+  let reason;
+  if (a.need === "major")
+    reason = "Since you need major work, Dental for Everyone (Delta) is the clear best fit — it covers implants, dentures, partials, and bridges, with plans that can start you with no waiting period.";
+  else if (a.need === "senior")
+    reason = "At 65 and up you want real coverage for the big stuff — Dental for Everyone (Delta) covers implants, dentures, partials, and bridges on one of the largest networks, with no-waiting-period plans available.";
+  else if (a.need === "family")
+    reason = "For your family, Dental for Everyone (Delta) gives you the largest network plus real coverage if anyone ever needs major work — including no-waiting-period options.";
+  else if (a.need === "routine")
+    reason = "Even for routine care, Dental for Everyone (Delta) is the best value — the largest network today, and you're already covered for major work later, with no-waiting-period plans available.";
+  else
+    reason = "Dental for Everyone (Delta) is your best fit — one of the largest networks, real coverage for major services, and plans available with no waiting period.";
+  return { carrier: CARRIERS.dfe, reason };
 }
 
 export default function PlanFinder() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null); // {carrier, reason} | {help}
+  const [showCompare, setShowCompare] = useState(false); // "Compare other options" expander on the results screen
   const [askHuman, setAskHuman] = useState(false);
   const [lead, setLead] = useState({ name: "", phone: "", zip: "" });
   const [lifeInterest, setLifeInterest] = useState(false); // life-insurance upsell — explicit opt-in, UNCHECKED by default
@@ -112,7 +128,7 @@ export default function PlanFinder() {
     if (step < Q.length - 1) { setStep(step + 1); }
     else { setResult(matchCarrier(next)); }
   }
-  function reset() { setStep(0); setAnswers({}); setResult(null); setAskHuman(false); setLead({ name: "", phone: "", zip: "" }); setLifeInterest(false); setQualToken(null); setLifeStep(0); setQualSkipped(false); setSaved(false); setSaving(false); setSaveError(""); }
+  function reset() { setStep(0); setAnswers({}); setResult(null); setShowCompare(false); setAskHuman(false); setLead({ name: "", phone: "", zip: "" }); setLifeInterest(false); setQualToken(null); setLifeStep(0); setQualSkipped(false); setSaved(false); setSaving(false); setSaveError(""); }
 
   async function submitCallback() {
     // ⬇ SAVE LEAD — write the collected lead to Supabase (insurance_leads table)
@@ -198,18 +214,32 @@ export default function PlanFinder() {
         </div>
       )}
 
-      {/* RESULT — self-serve match */}
+      {/* RESULT — primary recommendation (Dental for Everyone / Delta) + honest comparison */}
       {result && result.carrier && !askHuman && !saved && (
         <div className="fade" style={box}>
           <button className="b" onClick={reset} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontFamily: FONT, fontSize: 13.5, fontWeight: 600, color: C.muted, background: "none", border: "none", cursor: "pointer", marginBottom: 14 }}><RotateCcw size={14} /> Start over</button>
+
+          {/* AI reasoning */}
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", background: C.brandDeep, color: "#DEE9F7", borderRadius: 14, padding: "16px 18px", marginBottom: 18 }}>
             <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(244,180,60,.2)", display: "grid", placeItems: "center", flexShrink: 0 }}><Sparkles size={16} color={C.gold} /></div>
             <div style={{ fontSize: 15.5, lineHeight: 1.45 }}>{result.reason}</div>
           </div>
+
+          {/* PRIMARY — full prominent card */}
           <span style={{ display: "inline-block", fontSize: 11.5, fontWeight: 700, color: C.goldDeep, background: C.goldSoft, padding: "3px 10px", borderRadius: 999 }}>YOUR BEST FIT</span>
-          <div style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 25, letterSpacing: "-.02em", marginTop: 10 }}>{result.carrier.name}</div>
-          <p style={{ fontSize: 15, color: C.muted, margin: "6px 0 4px" }}>Good for: {result.carrier.good}</p>
-          <p style={{ fontSize: 14, color: C.ink, background: C.sky, borderRadius: 10, padding: "12px 14px", margin: "14px 0 18px", lineHeight: 1.5 }}>
+          <div style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 25, letterSpacing: "-.02em", margin: "10px 0 0", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            {result.carrier.name}
+            <span style={{ fontFamily: FONT, fontWeight: 700, fontSize: 12.5, color: C.brand, background: C.sky, borderRadius: 999, padding: "3px 11px" }}>{result.carrier.brand}</span>
+          </div>
+          <div style={{ display: "grid", gap: 9, margin: "14px 0 16px" }}>
+            {result.carrier.wins.map((w, i) => (
+              <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 14.5, color: C.ink, lineHeight: 1.4 }}>
+                <span style={{ width: 21, height: 21, borderRadius: 999, background: "#E1F0E6", display: "grid", placeItems: "center", flexShrink: 0, marginTop: 1 }}><Check size={13} color="#1E7A46" /></span>
+                {w}
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 14, color: C.ink, background: C.sky, borderRadius: 10, padding: "12px 14px", margin: "0 0 16px", lineHeight: 1.5 }}>
             👉 Click below to see <b>your exact price and coverage</b> for your zip code and age, then enroll right there. Coverage amounts vary by plan and area.
           </p>
           <a href={result.carrier.link} target="_blank" rel="noreferrer" className="b cta"
@@ -219,6 +249,24 @@ export default function PlanFinder() {
           <button className="b" onClick={() => setAskHuman(true)} style={{ width: "100%", marginTop: 12, background: "#fff", color: C.brand, border: `1.5px solid ${C.line}`, fontFamily: FONT, fontWeight: 700, fontSize: 15, padding: "13px", borderRadius: 12, cursor: "pointer", display: "inline-flex", justifyContent: "center", alignItems: "center", gap: 8 }}>
             <Phone size={16} /> I'd rather talk to someone
           </button>
+
+          {/* Compare other options — collapsed by default; honest one-line notes, working links */}
+          <button className="b" onClick={() => setShowCompare(v => !v)} style={{ width: "100%", marginTop: 18, background: "none", border: "none", color: C.muted, fontFamily: FONT, fontSize: 13.5, fontWeight: 600, cursor: "pointer", display: "inline-flex", justifyContent: "center", alignItems: "center", gap: 6 }}>
+            Compare other options <ChevronDown size={15} style={{ transform: showCompare ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+          </button>
+          {showCompare && (
+            <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
+              {[CARRIERS.humana, CARRIERS.ameritas].map((c) => (
+                <div key={c.name} style={{ border: `1px solid ${C.line}`, borderRadius: 12, padding: "13px 15px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ flex: "1 1 200px" }}>
+                    <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 16, color: C.ink }}>{c.name}</div>
+                    <div style={{ fontSize: 12.5, color: C.muted, marginTop: 3, lineHeight: 1.4 }}>{c.note}</div>
+                  </div>
+                  <a href={c.link} target="_blank" rel="noreferrer" className="b cta" style={{ display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none", background: "#fff", color: C.brand, border: `1.5px solid ${C.line}`, fontFamily: FONT, fontWeight: 700, fontSize: 13.5, padding: "9px 14px", borderRadius: 10, whiteSpace: "nowrap" }}>See price <ExternalLink size={14} /></a>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
