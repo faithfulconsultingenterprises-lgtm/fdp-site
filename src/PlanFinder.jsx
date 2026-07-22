@@ -72,6 +72,17 @@ const Q = [
   ]},
 ];
 
+/* Optional post-submit life-insurance qualifier — 3 quick tappable questions,
+   easiest first. Values are stored as codes; the CRM maps them to labels. */
+const LIFE_Q = [
+  { key: "age",     param: "p_age",      q: "What's your age range?",
+    opts: [["18-29", "18–29"], ["30-44", "30–44"], ["45-59", "45–59"], ["60+", "60+"]] },
+  { key: "hasLife", param: "p_has_life", q: "Do you have life insurance now?",
+    opts: [["yes", "Yes"], ["no", "No"], ["unsure", "Not sure"]] },
+  { key: "timing",  param: "p_timing",   q: "When would you want coverage in place?",
+    opts: [["now", "Right away"], ["months", "Next few months"], ["exploring", "Just exploring"]] },
+];
+
 function matchCarrier(a) {
   // returns { carrier, reason } or { help:true }
   if (a.need === "unsure") return { help: true, reason: "You told us you'd like help choosing — a licensed agent is the best next step." };
@@ -88,6 +99,9 @@ export default function PlanFinder() {
   const [askHuman, setAskHuman] = useState(false);
   const [lead, setLead] = useState({ name: "", phone: "", zip: "" });
   const [lifeInterest, setLifeInterest] = useState(false); // life-insurance upsell — explicit opt-in, UNCHECKED by default
+  const [qualToken, setQualToken] = useState(null);        // unguessable handle for the post-submit life qualifier RPC
+  const [lifeStep, setLifeStep] = useState(0);             // qualifier: 0..LIFE_Q.length-1 = a question, length = complete
+  const [qualSkipped, setQualSkipped] = useState(false);   // they tapped "Skip for now"
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -98,17 +112,19 @@ export default function PlanFinder() {
     if (step < Q.length - 1) { setStep(step + 1); }
     else { setResult(matchCarrier(next)); }
   }
-  function reset() { setStep(0); setAnswers({}); setResult(null); setAskHuman(false); setLead({ name: "", phone: "", zip: "" }); setLifeInterest(false); setSaved(false); setSaving(false); setSaveError(""); }
+  function reset() { setStep(0); setAnswers({}); setResult(null); setAskHuman(false); setLead({ name: "", phone: "", zip: "" }); setLifeInterest(false); setQualToken(null); setLifeStep(0); setQualSkipped(false); setSaved(false); setSaving(false); setSaveError(""); }
 
   async function submitCallback() {
     // ⬇ SAVE LEAD — write the collected lead to Supabase (insurance_leads table)
     const now = new Date().toISOString();
+    const token = crypto.randomUUID();                      // unguessable handle so we can safely update THIS row later
     const payload = {
       ...answers, ...lead,
       status: result?.help ? "needs-help" : "self-serve-wanted-call",
       life_interest: lifeInterest,                          // explicit opt-in; false unless they ticked the box
       life_consent_at: lifeInterest ? now : null,           // proof of WHEN they consented
       life_consent_version: lifeInterest ? LIFE_CONSENT_VERSION : null, // proof of WHAT wording
+      qualifier_token: token,                               // used ONLY by the scoped qualify_life_lead RPC
       created_at: now,
     };
     setSaving(true);
@@ -116,6 +132,7 @@ export default function PlanFinder() {
     try {
       const { error } = await supabase.from("insurance_leads").insert([payload]);
       if (error) throw error;
+      setQualToken(token);
       setSaved(true);
     } catch (e) {
       console.error("Failed to save lead:", e);
@@ -124,6 +141,20 @@ export default function PlanFinder() {
       setSaving(false);
     }
   }
+
+  // Optional life qualifier — tap answers, auto-advance, save each answer as we go.
+  // Optimistic advance keeps it snappy; a failed save is silent because the lead
+  // (and consent) are ALREADY saved — the qualifier is a bonus, never a blocker.
+  async function answerLife(idx, val) {
+    const q = LIFE_Q[idx];
+    setLifeStep(idx + 1);
+    try {
+      await supabase.rpc("qualify_life_lead", { p_token: qualToken, [q.param]: val });
+    } catch (e) {
+      console.error("qualifier save failed:", e);
+    }
+  }
+  function skipLife() { setQualSkipped(true); }
 
   const box = { background: C.surface, border: `1px solid ${C.line}`, borderRadius: 22, padding: "clamp(18px,3vw,30px)", boxShadow: "0 40px 80px -50px rgba(12,46,90,.5)", maxWidth: 640, margin: "0 auto" };
 
@@ -239,6 +270,35 @@ export default function PlanFinder() {
             <h2 style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 25, letterSpacing: "-.02em", margin: 0 }}>Got it{lead.name ? `, ${lead.name.split(" ")[0]}` : ""}!</h2>
             <p style={{ fontSize: 16, color: C.muted, margin: "10px auto 0", maxWidth: "40ch" }}>A licensed agent will call you shortly. Prefer now? Call <b style={{ color: C.brand }}>877-DDS-DOCS</b>.</p>
           </div>
+          {/* Optional life-insurance qualifier — ONLY if they opted in. An OFFER, not a request. */}
+          {lifeInterest && !qualSkipped && lifeStep < LIFE_Q.length && (
+            <div style={{ marginTop: 20, background: C.goldSoft, border: `1px solid ${C.goldDeep}44`, borderRadius: 16, padding: "18px 18px 14px" }}>
+              <div style={{ display: "flex", gap: 5, marginBottom: 12 }}>
+                {LIFE_Q.map((_, i) => <div key={i} style={{ flex: 1, height: 4, borderRadius: 999, background: i <= lifeStep ? C.goldDeep : "#EAD9AC" }} />)}
+              </div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: C.goldDeep }}>{lifeStep + 1} of {LIFE_Q.length}</div>
+              <h3 style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 20, letterSpacing: "-.01em", margin: "6px 0 3px", color: C.brandDeep }}>Want us to prep your quote before we call?</h3>
+              <p style={{ fontSize: 13.5, color: C.muted, margin: "0 0 16px" }}>3 quick taps — so your agent has real numbers ready.</p>
+              <div style={{ fontSize: 15.5, fontWeight: 700, color: C.ink, marginBottom: 10 }}>{LIFE_Q[lifeStep].q}</div>
+              <div style={{ display: "grid", gap: 9 }}>
+                {LIFE_Q[lifeStep].opts.map(([val, txt]) => (
+                  <button key={val} className="b opt" onClick={() => answerLife(lifeStep, val)}
+                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, textAlign: "left", background: "#fff", border: `1.5px solid ${C.line}`, borderRadius: 12, padding: "13px 16px", cursor: "pointer", fontFamily: FONT, fontSize: 15.5, fontWeight: 600, color: C.ink }}>
+                    {txt} <ChevronRight size={17} color={C.brand} style={{ flexShrink: 0 }} />
+                  </button>
+                ))}
+              </div>
+              <button className="b" onClick={skipLife} style={{ display: "block", margin: "14px auto 2px", background: "none", border: "none", color: C.muted, fontFamily: FONT, fontSize: 13, fontWeight: 600, textDecoration: "underline", cursor: "pointer" }}>Skip for now</button>
+            </div>
+          )}
+
+          {/* Qualifier complete — warm close */}
+          {lifeInterest && !qualSkipped && lifeStep >= LIFE_Q.length && (
+            <div style={{ marginTop: 18, background: C.sky, borderRadius: 12, padding: "14px 16px", textAlign: "center" }}>
+              <p style={{ fontSize: 15, fontWeight: 600, color: C.brandDeep, margin: 0, lineHeight: 1.45 }}>Perfect — your agent will have options ready when they call.</p>
+            </div>
+          )}
+
           <button className="b" onClick={reset} style={{ display: "block", margin: "20px auto 0", background: "none", border: "none", color: C.muted, fontFamily: FONT, fontSize: 14, fontWeight: 600, cursor: "pointer" }}><RotateCcw size={14} style={{ verticalAlign: "-2px" }} /> Run it again</button>
         </div>
       )}
