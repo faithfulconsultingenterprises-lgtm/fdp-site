@@ -42,6 +42,14 @@ const CARRIERS = {
 
 const PHONE = "877-337-3627"; // 877-DDS-DOCS
 
+/* Life-insurance upsell — the EXACT wording the person agrees to when they tick
+   the (unchecked-by-default) box. Stored in insurance_leads.life_consent_version
+   so consent is auditable per product. Bump the version prefix if the text changes.
+   NOTE: this is CALL/contact consent for a DIFFERENT product than dental — it does
+   NOT authorize an automated life-insurance SMS cadence. Treat life_interest as a
+   "call/prioritize" flag in the CRM. */
+const LIFE_CONSENT_VERSION = "life-v1 (2026-07-21): Yes, a licensed agent may contact me about life insurance.";
+
 /* the questions */
 const Q = [
   { id: "need", label: "What do you need dental coverage for?", opts: [
@@ -79,6 +87,7 @@ export default function PlanFinder() {
   const [result, setResult] = useState(null); // {carrier, reason} | {help}
   const [askHuman, setAskHuman] = useState(false);
   const [lead, setLead] = useState({ name: "", phone: "", zip: "" });
+  const [lifeInterest, setLifeInterest] = useState(false); // life-insurance upsell — explicit opt-in, UNCHECKED by default
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
@@ -89,11 +98,19 @@ export default function PlanFinder() {
     if (step < Q.length - 1) { setStep(step + 1); }
     else { setResult(matchCarrier(next)); }
   }
-  function reset() { setStep(0); setAnswers({}); setResult(null); setAskHuman(false); setLead({ name: "", phone: "", zip: "" }); setSaved(false); setSaving(false); setSaveError(""); }
+  function reset() { setStep(0); setAnswers({}); setResult(null); setAskHuman(false); setLead({ name: "", phone: "", zip: "" }); setLifeInterest(false); setSaved(false); setSaving(false); setSaveError(""); }
 
   async function submitCallback() {
     // ⬇ SAVE LEAD — write the collected lead to Supabase (insurance_leads table)
-    const payload = { ...answers, ...lead, status: result?.help ? "needs-help" : "self-serve-wanted-call", created_at: new Date().toISOString() };
+    const now = new Date().toISOString();
+    const payload = {
+      ...answers, ...lead,
+      status: result?.help ? "needs-help" : "self-serve-wanted-call",
+      life_interest: lifeInterest,                          // explicit opt-in; false unless they ticked the box
+      life_consent_at: lifeInterest ? now : null,           // proof of WHEN they consented
+      life_consent_version: lifeInterest ? LIFE_CONSENT_VERSION : null, // proof of WHAT wording
+      created_at: now,
+    };
     setSaving(true);
     setSaveError("");
     try {
@@ -193,10 +210,21 @@ export default function PlanFinder() {
             <input className="in b" value={lead.name} onChange={(e) => setLead({ ...lead, name: e.target.value })} placeholder="Your name" style={{ fontFamily: FONT, fontSize: 15, padding: "12px 14px", borderRadius: 11, border: `1.5px solid ${C.line}`, background: "#fff", color: C.ink }} />
             <input className="in b" value={lead.phone} onChange={(e) => setLead({ ...lead, phone: e.target.value })} placeholder="Phone number" inputMode="tel" style={{ fontFamily: FONT, fontSize: 15, padding: "12px 14px", borderRadius: 11, border: `1.5px solid ${C.line}`, background: "#fff", color: C.ink }} />
             <input className="in b" value={lead.zip} onChange={(e) => setLead({ ...lead, zip: e.target.value })} placeholder="ZIP code" inputMode="numeric" style={{ fontFamily: FONT, fontSize: 15, padding: "12px 14px", borderRadius: 11, border: `1.5px solid ${C.line}`, background: "#fff", color: C.ink }} />
+
+            {/* Life-insurance upsell — ONE extra opt-in. UNCHECKED by default; never gates the dental callback. */}
+            <label style={{ display: "flex", gap: 11, alignItems: "flex-start", cursor: "pointer", fontSize: 14, color: C.ink, lineHeight: 1.5, background: C.goldSoft, border: `1px solid ${C.goldDeep}33`, borderRadius: 12, padding: "12px 14px" }}>
+              <input type="checkbox" className="b" checked={lifeInterest} onChange={(e) => setLifeInterest(e.target.checked)}
+                style={{ width: 19, height: 19, marginTop: 1, flexShrink: 0, accentColor: C.brand, cursor: "pointer" }} />
+              <span><b>Want a free life insurance quote too?</b><br />Yes, a licensed agent may contact me about life insurance.</span>
+            </label>
+
             <button className="b cta" onClick={submitCallback} disabled={!lead.name || !lead.phone || saving}
               style={{ background: (lead.name && lead.phone && !saving) ? C.gold : "#E7EBF2", color: (lead.name && lead.phone && !saving) ? C.brandDeep : "#9BAAC4", border: "none", fontFamily: FONT, fontWeight: 700, fontSize: 16, padding: "14px", borderRadius: 12, cursor: (lead.name && lead.phone && !saving) ? "pointer" : "not-allowed" }}>
               {saving ? "Saving…" : "Request my call back"}
             </button>
+            <p style={{ fontSize: 11.5, color: C.muted, lineHeight: 1.5, margin: 0, textAlign: "center" }}>
+              By requesting a call, you agree a licensed agent may call or text you about dental coverage at the number provided. Msg &amp; data rates may apply. Consent isn&rsquo;t a condition of purchase.
+            </p>
             {saveError && <p style={{ color: "#B42318", background: "#FEF3F2", border: "1px solid #FECDCA", borderRadius: 10, padding: "10px 12px", fontSize: 13.5, lineHeight: 1.45, margin: 0 }}>{saveError}</p>}
           </div>
           <button className="b" onClick={reset} style={{ display: "block", margin: "14px auto 0", background: "none", border: "none", color: C.muted, fontFamily: FONT, fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}>← Start over</button>
