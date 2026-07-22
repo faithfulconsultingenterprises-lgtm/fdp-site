@@ -231,7 +231,7 @@ export default function PlanFinder() {
         </div>
       )}
 
-      {/* SAVED confirmation + what the agent sees */}
+      {/* SAVED confirmation — customer-facing only (no internal CRM/lead details) */}
       {saved && (
         <div className="fade" style={box}>
           <div style={{ textAlign: "center" }}>
@@ -239,17 +239,7 @@ export default function PlanFinder() {
             <h2 style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 25, letterSpacing: "-.02em", margin: 0 }}>Got it{lead.name ? `, ${lead.name.split(" ")[0]}` : ""}!</h2>
             <p style={{ fontSize: 16, color: C.muted, margin: "10px auto 0", maxWidth: "40ch" }}>A licensed agent will call you shortly. Prefer now? Call <b style={{ color: C.brand }}>877-DDS-DOCS</b>.</p>
           </div>
-          <div style={{ marginTop: 20, background: C.brandDeep, color: "#DEE9F7", borderRadius: 14, padding: "16px 18px" }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: C.gold, marginBottom: 10 }}>Qualified lead → your CRM</div>
-            <div style={{ display: "grid", gap: 6, fontSize: 14.5 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#9FC0E6" }}>Name / phone</span><b>{lead.name} · {lead.phone}</b></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#9FC0E6" }}>ZIP</span><b>{lead.zip || "—"}</b></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#9FC0E6" }}>Needs</span><b>{answers.need || "—"}</b></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#9FC0E6" }}>Current coverage</span><b>{answers.coverage || "—"}</b></div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: "#9FC0E6" }}>Urgency</span><b>{answers.urgency || "—"}</b></div>
-            </div>
-          </div>
-          <button className="b" onClick={reset} style={{ display: "block", margin: "16px auto 0", background: "none", border: "none", color: C.muted, fontFamily: FONT, fontSize: 14, fontWeight: 600, cursor: "pointer" }}><RotateCcw size={14} style={{ verticalAlign: "-2px" }} /> Run it again</button>
+          <button className="b" onClick={reset} style={{ display: "block", margin: "20px auto 0", background: "none", border: "none", color: C.muted, fontFamily: FONT, fontSize: 14, fontWeight: 600, cursor: "pointer" }}><RotateCcw size={14} style={{ verticalAlign: "-2px" }} /> Run it again</button>
         </div>
       )}
 
