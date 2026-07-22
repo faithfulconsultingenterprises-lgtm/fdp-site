@@ -268,27 +268,37 @@ export default function PlanFinder() {
           <div style={{ textAlign: "center" }}>
             <div style={{ width: 56, height: 56, borderRadius: 999, background: C.brand, display: "grid", placeItems: "center", margin: "0 auto 14px" }}><Check size={28} color="#fff" /></div>
             <h2 style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 25, letterSpacing: "-.02em", margin: 0 }}>Got it{lead.name ? `, ${lead.name.split(" ")[0]}` : ""}!</h2>
-            <p style={{ fontSize: 16, color: C.muted, margin: "10px auto 0", maxWidth: "40ch" }}>A licensed agent will call you shortly. Prefer now? Call <b style={{ color: C.brand }}>877-DDS-DOCS</b>.</p>
+            <p style={{ fontSize: 15.5, color: C.muted, margin: "8px auto 0", maxWidth: "42ch" }}>Your dental callback is confirmed — an agent will call you shortly. Or call <b style={{ color: C.brand }}>877-DDS-DOCS</b>.</p>
           </div>
-          {/* Optional life-insurance qualifier — ONLY if they opted in. An OFFER, not a request. */}
+          {/* Optional LIFE INSURANCE qualifier — ONLY if they opted in. Given its OWN identity and a
+              clear break from the dental confirmation above so the two don't blend. An OFFER, not a request. */}
           {lifeInterest && !qualSkipped && lifeStep < LIFE_Q.length && (
-            <div style={{ marginTop: 20, background: C.goldSoft, border: `1px solid ${C.goldDeep}44`, borderRadius: 16, padding: "18px 18px 14px" }}>
-              <div style={{ display: "flex", gap: 5, marginBottom: 12 }}>
-                {LIFE_Q.map((_, i) => <div key={i} style={{ flex: 1, height: 4, borderRadius: 999, background: i <= lifeStep ? C.goldDeep : "#EAD9AC" }} />)}
+            <div style={{ marginTop: 22, borderTop: `1px solid ${C.line}`, paddingTop: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase", color: C.goldDeep, marginBottom: 8, display: "flex", alignItems: "center", gap: 7 }}>
+                <Shield size={14} color={C.goldDeep} /> Life insurance quote
               </div>
-              <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: C.goldDeep }}>{lifeStep + 1} of {LIFE_Q.length}</div>
-              <h3 style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 20, letterSpacing: "-.01em", margin: "6px 0 3px", color: C.brandDeep }}>Want us to prep your quote before we call?</h3>
-              <p style={{ fontSize: 13.5, color: C.muted, margin: "0 0 16px" }}>3 quick taps — so your agent has real numbers ready.</p>
-              <div style={{ fontSize: 15.5, fontWeight: 700, color: C.ink, marginBottom: 10 }}>{LIFE_Q[lifeStep].q}</div>
-              <div style={{ display: "grid", gap: 9 }}>
-                {LIFE_Q[lifeStep].opts.map(([val, txt]) => (
-                  <button key={val} className="b opt" onClick={() => answerLife(lifeStep, val)}
-                    style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, textAlign: "left", background: "#fff", border: `1.5px solid ${C.line}`, borderRadius: 12, padding: "13px 16px", cursor: "pointer", fontFamily: FONT, fontSize: 15.5, fontWeight: 600, color: C.ink }}>
-                    {txt} <ChevronRight size={17} color={C.brand} style={{ flexShrink: 0 }} />
-                  </button>
-                ))}
+              <div style={{ background: C.goldSoft, border: `1px solid ${C.goldDeep}44`, borderRadius: 16, padding: "18px 18px 14px" }}>
+                <div style={{ display: "flex", gap: 5, marginBottom: 10 }}>
+                  {LIFE_Q.map((_, i) => <div key={i} style={{ flex: 1, height: 4, borderRadius: 999, background: i <= lifeStep ? C.goldDeep : "#EAD9AC" }} />)}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: C.goldDeep }}>Life insurance quote · {lifeStep + 1} of {LIFE_Q.length}</div>
+                <h3 style={{ fontFamily: DISPLAY, fontWeight: 800, fontSize: 20, letterSpacing: "-.01em", margin: "6px 0 3px", color: C.brandDeep }}>Want us to prep your life insurance quote before we call?</h3>
+                <p style={{ fontSize: 13.5, color: C.muted, margin: "0 0 10px" }}>3 quick taps — one call, both covered.</p>
+                <p style={{ fontSize: 12.5, color: C.brandDeep, background: "#fff", border: `1px solid ${C.line}`, borderRadius: 9, padding: "8px 11px", margin: "0 0 16px", lineHeight: 1.45 }}>
+                  <Check size={13} color={C.brand} style={{ verticalAlign: "-2px", marginRight: 5 }} />
+                  Your dental callback is already confirmed. This is just for the life insurance quote you asked about.
+                </p>
+                <div style={{ fontSize: 15.5, fontWeight: 700, color: C.ink, marginBottom: 10 }}>{LIFE_Q[lifeStep].q}</div>
+                <div style={{ display: "grid", gap: 9 }}>
+                  {LIFE_Q[lifeStep].opts.map(([val, txt]) => (
+                    <button key={val} className="b opt" onClick={() => answerLife(lifeStep, val)}
+                      style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, textAlign: "left", background: "#fff", border: `1.5px solid ${C.line}`, borderRadius: 12, padding: "13px 16px", cursor: "pointer", fontFamily: FONT, fontSize: 15.5, fontWeight: 600, color: C.ink }}>
+                      {txt} <ChevronRight size={17} color={C.brand} style={{ flexShrink: 0 }} />
+                    </button>
+                  ))}
+                </div>
+                <button className="b" onClick={skipLife} style={{ display: "block", margin: "14px auto 2px", background: "none", border: "none", color: C.muted, fontFamily: FONT, fontSize: 13, fontWeight: 600, textDecoration: "underline", cursor: "pointer" }}>Skip for now</button>
               </div>
-              <button className="b" onClick={skipLife} style={{ display: "block", margin: "14px auto 2px", background: "none", border: "none", color: C.muted, fontFamily: FONT, fontSize: 13, fontWeight: 600, textDecoration: "underline", cursor: "pointer" }}>Skip for now</button>
             </div>
           )}
 
